@@ -1,44 +1,55 @@
 import { Component } from "react";
 
+import { PostCard } from "../../components/Post/PostCard";
+import { MorePostsButton } from "../../components/MorePostsButton";
+import { getPostsAndPhotosFromApi } from "../../utils/generics";
+
+import "./styles.css";
+
 export class Home extends Component {
   state = {
-    posts: [
-      { id: 1, title: "tit 1", body: "body1" },
-      { id: 2, title: "tit 2", body: "body2" },
-      { id: 3, title: "tit 3", body: "body3" },
-    ],
+    posts: [],
+    allPosts: [],
+    page: 0,
+    postsPerPage: 2,
   };
-
-  timeoutUpdate = null;
 
   componentDidMount() {
-    this.handleTimeout();
+    this.loadPosts();
   }
 
-  componentDidUpdate() {
-    this.handleTimeout();
-  }
+  loadPosts = async () => {
+    const { page, postsPerPage } = this.state;
+    const postsAndPhotos = await getPostsAndPhotosFromApi();
 
-  componentWillUnmount() {
-    clearTimeout(this.timeoutUpdate);
-  }
-
-  handleTimeout = () => {
-    const { posts, counter } = this.state;
-    posts[0].title = "O título mudou";
-
-    this.timeoutUpdate = setTimeout(() => {
-      this.setState({ posts, counter: counter + 1 });
-    }, 1000);
+    this.setState({
+      posts: postsAndPhotos.slice(page, postsPerPage),
+      allPosts: postsAndPhotos,
+    });
   };
+
+  loadMorePosts = () => {
+    const { page, postsPerPage, allPosts, posts } = this.state;
+    const nextPage = page + postsPerPage;
+    const nextPosts = allPosts.slice(nextPage, nextPage + postsPerPage);
+    posts.push(...nextPosts);
+
+    this.setState({ posts, page: nextPage });
+  };
+
   render() {
-    const { posts } = this.state;
+    const { posts, page, postsPerPage, allPosts } = this.state;
+    const noMorePosts = page + postsPerPage >= allPosts.length;
+
     return (
       <section className="container">
-        <div className="app">
-          {posts.map((p) => (
-            <div> Movies: {p.title}</div>
-          ))}
+        <PostCard posts={posts} />
+        <div className="button-container">
+          <MorePostsButton
+            text={"Mais cards"}
+            onClick={this.loadMorePosts}
+            disabled={noMorePosts}
+          />
         </div>
       </section>
     );
